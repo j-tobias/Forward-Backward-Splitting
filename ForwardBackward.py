@@ -1,70 +1,66 @@
 
 import numpy as np
 from tqdm import tqdm
+from gradient import gradient as GradObjective
+from gradient import function as Objective
 
-def Objective (M,x,y,tau):
-    """
-    M := m rows and n = 2m
-    y := vector y ∈ R^m
-    x := vector x ∈ R^n
-    tau := positive scalar (1)
-    """
-    return (0.5 * np.linalg.norm(np.matmul(M, x) - y)) + (tau * np.linalg.norm(x, ord=1))
 
-def GradObjective (M,x,y,tau):
-    """
-    returns the gradient of the Objective evaluated with respect to x
-    grad f = M * ((M * x) - y) + tau * sign(x)
-    """
-    return (M.T @ (np.matmul(M, x) - y) / np.linalg.norm(np.matmul(M, x) - y)) + (tau * np.sign(x))
-    return np.matmul(M.T, np.matmul(M, x) - y) + tau * np.sign(x)
 
 def ProximalOperator (x,tau):
     #return np.sign(x) * np.maximum(np.abs(x) - tau, 0)
-    return np.matmul(np.sign(x), np.maximum(np.abs(x) - tau, 0))
+    y = np.sign(x)
+    y[y > tau] = tau
+    y[y < -tau] = -tau
+    y = y - tau * np.maximum(np.abs(x) - tau, 0)
+    return y
     
 
 class FB_splitting:
 
-    def __init__(self, M, y, x, tau):
+    def __init__(self, M, y, x, tau, stepsize = 1.0):
         self.M = M
         self.y = y
         self.x = x
         self.tau = tau
-        self.stepsize = 1.0
+        self.stepsize = stepsize
 
 
     def forward (self):
         """
-        Forward Step: In the forward step, we update the variable x based on the gradient of the differentiable function g(x). The update rule is typically given by:
-        x^(k+1) = x^k - α * ∇g(x^k)
-        where x^k represents the value of x at iteration k, α is the step size (also known as the learning rate), and ∇g(x^k) denotes the gradient of g(x) evaluated at x^k.
+        The Forward Step moves x into the direction of the gradient of the Objective
         """
-        #x_k1 = self.x - self.stepsize * GradObjective(self.M, self.x, self.y, self.tau)
-        gradient = GradObjective(self.M, self.x, self.y, self.tau)
-        #x_k1 = tf.subtract(self.x, tf.multiply(self.stepsize, gradient))
+
+        gradient = GradObjective(self.x, self.M, self.y, self.tau)
         x_k1 = self.x - self.stepsize * gradient
         return x_k1
     
-    def backward (self, x):
-        return ProximalOperator(x, self.tau)
+    def backward (self, x_k1):
+        """
+        The Backward Step moves the new x into the direction of Proximal Operator
+        """
+        prox = ProximalOperator(x_k1, self.tau)
+        return x_k1 - self.stepsize * prox
     
     def solve (self, n_iterations = 1000, tol =1e-6):
+        """
+        Performs the Forward and Backward steps iteravely until the limit of iterations is reached
+        """
 
         steps = []
 
         for i in range(n_iterations):
 
-            #print(self.x)
+            steps.append(self.x)
         
             x_k1 = self.forward()
-            #x_k1 = self.backward(x_k1)
+            x_k1 = self.backward(x_k1)
 
-            if np.linalg.norm(self.x - x_k1) < tol:
+            distance = np.linalg.norm(self.x - x_k1)
+            #print("traveled Distance: ", distance, "x_k1: ",x_k1, "self.x: ", self.x)
+
+            if distance < tol or str(distance) == 'inf' or str(distance) == 'nan':
                 break
             
             self.x = x_k1
-            steps.append(x_k1)
-            
         
         return self.x, np.asarray(steps)
