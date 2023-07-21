@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 from gradient import *
 
 # Your existing gradient and function functions...
@@ -9,7 +8,6 @@ from gradient import *
 x1_vals = np.linspace(-10, 10, 50)
 x2_vals = np.linspace(-10, 10, 50)
 X1, X2 = np.meshgrid(x1_vals, x2_vals)
-samples = np.stack([X1, X2], axis=-1)
 
 # Evaluate the function on the samples
 M = np.array([[1, 2]])  # Adjust the values accordingly
@@ -19,33 +17,34 @@ function_values = np.zeros((50, 50))
 
 for i in range(50):
     for j in range(50):
-        function_values[i, j] = Objective(M, samples[i, j], y, tau)
+        function_values[i, j] = function([X1[i, j], X2[i, j]], M, y, tau)
 
 # Compute gradients on the samples
 gradients = np.zeros((50, 50, 2))
 
 for i in range(50):
     for j in range(50):
-        gradients[i, j] = GradObjective(M, samples[i, j], y, tau)
+        gradients[i, j] = gradient([X1[i, j], X2[i, j]], M, y, tau)
 
-# Plot both results in one plot
-fig = plt.figure(figsize=(10, 5))
+# Create the 2D plot with arrows representing gradients
+fig, ax = plt.subplots()
+ax.set_xlabel('X1')
+ax.set_ylabel('X2')
+ax.set_title('Function Surface with Gradients')
 
-# 3D plot of the function values
-ax1 = fig.add_subplot(121, projection='3d')
-ax1.plot_surface(X1, X2, function_values, cmap='viridis')
-ax1.set_xlabel('X1')
-ax1.set_ylabel('X2')
-ax1.set_zlabel('Function Value')
-ax1.set_title('Function Values')
+# Plot the function surface
+surf = ax.contourf(X1, X2, function_values, levels=20, cmap='viridis')
 
-# 2D plot of the gradients as arrows
-ax2 = fig.add_subplot(122)
-ax2.quiver(X1, X2, gradients[:, :, 0], gradients[:, :, 1], angles='xy')
-ax2.set_xlabel('X1')
-ax2.set_ylabel('X2')
-ax2.set_aspect('equal')
-ax2.set_title('Gradients')
+# Add arrows representing gradients
+arrow_scale = 0.9  # Adjust the arrow length
+for i in range(0, 50, 5):
+    for j in range(0, 50, 5):
+        x, y = X1[i, j], X2[i, j]
+        grad_x, grad_y = gradients[i, j]
+        ax.arrow(x, y, grad_x * arrow_scale, grad_y * arrow_scale, head_width=0.25, head_length=0.25, fc='red', ec='red')
 
-plt.tight_layout()
+# Add colorbar
+cbar = plt.colorbar(surf, ax=ax)
+cbar.ax.set_ylabel('Function Value')
+
 plt.show()

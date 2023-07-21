@@ -12,7 +12,15 @@ class Problem:
         self.sp4 = sp4
         self.sp5 = sp5
 
-def generate_problem(m, n, q=10, num_starting_points=3):
+    def __repr__ (self):
+        counter = 0
+        for _ in [self.sp1, self.sp2, self.sp3, self.sp4, self.sp5]:
+            if str(_) != "None":
+                counter += 1
+        return f"M: {self.M.shape}, y: {self.y.shape}, num starting points: {counter}"
+
+
+def generate_problem(m, n, q=10, num_starting_points=5):
     rng = np.random.default_rng(seed=m+n)
 
     # Generate (m x n) Matrix.

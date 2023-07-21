@@ -7,7 +7,6 @@ from gradient import function as Objective
 
 
 def ProximalOperator (x,tau):
-    #return np.sign(x) * np.maximum(np.abs(x) - tau, 0)
     y = np.sign(x)
     y[y > tau] = tau
     y[y < -tau] = -tau
@@ -23,7 +22,6 @@ class FB_splitting:
         self.x = x
         self.tau = tau
         self.stepsize = stepsize
-
 
     def forward (self):
         """
